@@ -44,85 +44,87 @@ lsblk -o NAME,TYPE,SIZE,FSTYPE,MOUNTPOINTS,PKNAME
 ```
 
 
-Confirm what is mounted where:
-
+- Confirm what is mounted where:
+```
 findmnt / /boot /boot/efi /var/log/pulsar
+```
 
+- If your “other disk” is NVMe, you’ll typically see:
+- Root disk: /dev/nvme0n1 (root partition like /dev/nvme0n1p2)
+- Other disk: /dev/nvme1n1 (partition like /dev/nvme1n1p1) mounted on /var/log/pulsar
 
-If your “other disk” is NVMe, you’ll typically see:
+- Optional: stop services writing to /var/log/pulsar
 
-Root disk: /dev/nvme0n1 (root partition like /dev/nvme0n1p2)
-
-Other disk: /dev/nvme1n1 (partition like /dev/nvme1n1p1) mounted on /var/log/pulsar
-
-Optional: stop services writing to /var/log/pulsar
-
-Unmounting can fail if the directory is busy. If you have a Pulsar service:
-
+- Unmounting can fail if the directory is busy. If you have a Pulsar service:
+```
 sudo systemctl stop pulsar 2>/dev/null || true
-
+```
 
 If you’re unsure what’s holding it open:
-
+```
 sudo fuser -vm /var/log/pulsar
+```
 # or (if installed)
+```
 sudo lsof +f -- /var/log/pulsar
+```
+- Install / Save the script
 
-Install / Save the script
-
-Save the script below as:
-
+- Save the script below as:
+```
 remount_pulsar_to_data_root_safe.sh
-
-Make it executable:
-
+```
+- Make it executable:
+```
 chmod +x remount_pulsar_to_data_root_safe.sh
-
-Run
+```
+- Run
+``` 
 sudo ./remount_pulsar_to_data_root_safe.sh
-
+```
 Verify
 
 Confirm /data is now mounted:
-
+```
 findmnt /data
-
+```
 
 Check fstab contains /data and does not still use /var/log/pulsar:
-
+```
 grep -nE '(/data|/var/log/pulsar)' /etc/fstab
-
+```
 
 Validate all fstab mounts parse correctly:
-
+```
 sudo mount -a
-
+```
 
 Reboot test (recommended):
-
+```
 sudo reboot
-
+```
 
 After reboot:
-
+```
 findmnt /data
-
-Rollback
+```
+## Rollback
 
 The script creates a timestamped backup of /etc/fstab:
 
 Example:
-
+```
 /etc/fstab.bak.20260129-120000
+```
+- To rollback:
 
-To rollback:
-
-Replace /etc/fstab with the backup:
-
+- Replace /etc/fstab with the backup:
+```
 sudo cp -a /etc/fstab.bak.YYYYMMDD-HHMMSS /etc/fstab
+```
 
-
-Unmount /data and remount according to restored fstab:
-
+- Unmount /data and remount according to restored fstab:
+```
 sudo umount /data || true
 sudo mount -a
+```
