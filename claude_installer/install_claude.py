@@ -246,13 +246,17 @@ class ClaudeInstaller:
         
         self.log("Installing NVM...", "step")
         
+        # Install NVM with suppressed output for "already exists" messages
+        # NVM installer outputs to stderr for info messages
         nvm_install_script = '''
         export NVM_DIR="$HOME/.nvm"
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+        curl -s -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash 2>&1 | grep -v "already in" | grep -v "^=>" || true
         '''
         
         result = self.run_command(['bash', '-c', nvm_install_script], check=False)
-        if result:
+        
+        # Verify NVM was installed
+        if (self.nvm_dir / 'nvm.sh').exists():
             self.log("NVM installed successfully", "success")
             return True
         else:
@@ -272,20 +276,25 @@ class ClaudeInstaller:
         
         self.log(f"Installing Node.js v{self.config['node_version']}...", "step")
         
+        # Install Node.js, filtering out NVM's informational messages
         nvm_install_node = f'''
         export NVM_DIR="{self.nvm_dir}"
         [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-        nvm install {self.config['node_version']} --latest-npm
-        nvm use {self.config['node_version']}
-        nvm alias default {self.config['node_version']}
+        nvm install {self.config['node_version']} --latest-npm 2>&1 | grep -v "already in" | grep -v "^=>" || true
+        nvm use {self.config['node_version']} > /dev/null 2>&1
+        nvm alias default {self.config['node_version']} > /dev/null 2>&1
+        node --version
         '''
         
-        result = self.run_command(['bash', '-c', nvm_install_node], check=False)
-        if result:
-            self.log(f"Node.js v{self.config['node_version']} installed successfully", "success")
+        result = self.run_command(['bash', '-c', nvm_install_node], capture_output=True, check=False)
+        
+        # Verify Node was installed correctly
+        node_ok, node_msg = self.check_node_version()
+        if node_ok:
+            self.log(f"Node.js installed successfully ({node_msg})", "success")
             return True
         else:
-            self.log("Failed to install Node.js", "error")
+            self.log(f"Failed to install Node.js: {node_msg}", "error")
             return False
     
     def install_claude_code(self) -> bool:
@@ -297,15 +306,24 @@ class ClaudeInstaller:
         
         self.log("Installing Claude Code...", "step")
         
-        # Ensure npm global directory exists
+        # Ensure npm global directory structure exists BEFORE npm config
         self.npm_global_dir.mkdir(parents=True, exist_ok=True)
         (self.npm_global_dir / 'bin').mkdir(exist_ok=True)
         (self.npm_global_dir / 'lib').mkdir(exist_ok=True)
+        (self.npm_global_dir / 'share').mkdir(exist_ok=True)
         
-        # Build install command
+        # Build install command - create dirs in bash too for safety
         install_cmd = f'''
         export NVM_DIR="{self.nvm_dir}"
         [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+        
+        # Ensure npm-global directory exists
+        mkdir -p "{self.npm_global_dir}/bin"
+        mkdir -p "{self.npm_global_dir}/lib"
+        mkdir -p "{self.npm_global_dir}/share"
+        
+        # Set npm prefix
+        npm config set prefix "{self.npm_global_dir}"
         '''
         
         # Add proxy configuration if specified
@@ -315,8 +333,7 @@ class ClaudeInstaller:
         npm config set https-proxy {self.config['http_proxy']}
         '''
         
-        install_cmd += f'''
-        npm config set prefix "{self.npm_global_dir}"
+        install_cmd += '''
         npm install -g @anthropic-ai/claude-code
         '''
         
