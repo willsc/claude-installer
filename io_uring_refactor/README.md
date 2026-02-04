@@ -1,6 +1,6 @@
 Here is the raw markdown for the `README.md` file. You can copy the content of the code block below directly into a file named `README.md`.
 
-```markdown
+
 # uring_mem_sim
 
 A utility to simulate and debug `io_uring` memory constraints, specifically targeting failures related to `MEMLOCK` (pinned memory), Virtual Memory Areas (VMAs), and aggregate host pressure.
@@ -21,7 +21,7 @@ These tests are designed to force failures in predictable ways. Each section inc
 
 ### 0) Sanity (Should Succeed)
 Basic verification that the tool and environment are working.
-```bash
+```
 ./uring_mem_sim -P 1 -m 0 -n 2 -q 256 -b 64 -s 4096 -p 1
 ```
 
@@ -29,12 +29,12 @@ Basic verification that the tool and environment are working.
 Set a small per-service memlock with `-k` and increase rings. Each ring pins ~64MiB (`-b 1024 -s 65536`), so `-k 128M` should allow ~2 rings max.
 
 **One-liner:**
-```bash
+```
 ./uring_mem_sim -P 1 -m 0 -n 16 -q 512 -b 1024 -s 65536 -k 128M -p 1 -I
 ```
 
 **Sweep rings until failure:**
-```bash
+```
 cat > sweep_rings_until_fail.sh <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
