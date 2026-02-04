@@ -1,0 +1,62 @@
+```
+Installing Claude Code on Windows 11
+You have two main options for running Claude Code on Windows:
+Option 1: Native Windows with Git Bash (Simpler)
+
+Install Git for Windows from git-scm.com/install/win — this includes Git Bash
+Install Claude Code via PowerShell (run as Administrator):
+
+powershell   irm https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/install-claude-code.ps1 | iex
+
+Run claude from Git Bash or PowerShell
+
+Option 2: WSL 2 (Better sandboxing/security)
+
+Install WSL: wsl --install in PowerShell as Admin, then reboot
+In your Ubuntu terminal, install Node.js 18+ and then Claude Code
+
+
+Using Claude Code in RustRover (JetBrains)
+Claude Code integrates with JetBrains IDEs through a dedicated plugin, providing features like interactive diff viewing, selection context sharing, and more. Claude
+Setup steps:
+
+Find and install the Claude Code plugin from the JetBrains marketplace and restart your IDE. Claude
+Run claude from your IDE's integrated terminal, and all integration features will be active. Claude
+
+Features you get:
+
+Quick launch: Use Cmd+Esc (Mac) or Ctrl+Esc (Windows/Linux) to open Claude Code directly from your editor Claude
+Diff viewing: Code changes can be displayed directly in the IDE diff viewer instead of the terminal Claude
+Selection context: The current selection/tab in the IDE is automatically shared with Claude Code Claude
+Diagnostic sharing: Diagnostic errors (lint, syntax, etc.) from the IDE are automatically shared with Claude as you work Claude
+
+Note: There's a known bug where IDE integration is broken in Claude Code v2.1.23+ on Windows — the IDE MCP server never connects. GitHub If you hit this, you may need to wait for a fix or try downgrading.
+
+Fixing the Self-Signed Certificate Error
+This is a common issue in corporate environments where a proxy or VPN (like Zscaler) intercepts HTTPS traffic. The Claude extension is saying "take me to anthropic" but the VPN is intercepting the connection and presenting its own certificate. Medium
+Solution: Configure Claude Code to trust your corporate CA certificate
+
+Get your corporate CA certificate (usually a .pem or .crt file) — your IT department can provide this, or export it from your browser's certificate store
+Set the environment variable to tell Claude Code to trust it:
+
+powershell   # In PowerShell, add to your profile or set permanently
+   $env:NODE_EXTRA_CA_CERTS = "C:\path\to\your-corporate-ca.pem"
+Or in WSL/Bash:
+bash   export NODE_EXTRA_CA_CERTS=/path/to/your-corporate-ca.pem
+
+If you're behind a proxy, also configure:
+
+powershell   $env:HTTPS_PROXY = "http://proxy.yourcompany.com:8080"
+
+All environment variables can also be configured in settings.json Claude at ~/.claude/settings.json
+
+Required URLs to allowlist in your firewall/proxy:
+
+api.anthropic.com - Claude API endpoints Claude
+claude.ai - WebFetch safeguards Claude
+statsig.anthropic.com - Telemetry and metrics Claude
+sentry.io - Error reporting Claude
+
+If the certificate workaround doesn't work and you absolutely cannot contact Anthropic's servers, you'd need to either get your corporate firewall rules changed to allow these domains, or use Claude Code outside your corporate network. There's no offline mode for Claude Code since it requires the API.
+
+```
