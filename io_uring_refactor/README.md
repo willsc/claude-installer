@@ -9,7 +9,7 @@ A utility to simulate and debug `io_uring` memory constraints, specifically targ
 
 Ensure you have the development libraries for `liburing` installed.
 
-```bash
+```
 sudo apt-get update
 sudo apt-get install -y build-essential liburing-dev
 gcc -O2 -Wall -Wextra -std=gnu11 uring_mem_sim.c -luring -o uring_mem_sim
